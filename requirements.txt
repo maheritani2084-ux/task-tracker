@@ -1,0 +1,9 @@
+# Module 1 Task Tracker skeleton dependencies.
+# Pins reflect the latest stable releases as of 2026-07-05.
+# After installing, run `pip freeze` to verify the exact resolved versions
+# in your environment (transitive dependencies such as starlette, anyio,
+# and pydantic-core are installed automatically and are not pinned here).
+fastapi==0.139.0
+uvicorn[standard]==0.50.0
+pydantic==2.13.4
+python-dotenv==1.2.2
