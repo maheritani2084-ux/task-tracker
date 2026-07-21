@@ -117,6 +117,22 @@ def test_patch_same_status_returns_422(client, created_task):
     assert r.status_code == 422
 
 
+def test_patch_done_task_back_to_todo_returns_422(client):
+    create_response = client.post("/tasks", json={"title": "done task"})
+    assert create_response.status_code == 201
+    task_id = create_response.json()["id"]
+
+    in_progress_response = client.patch(f"/tasks/{task_id}", json={"status": "InProgress"})
+    assert in_progress_response.status_code == 200
+
+    done_response = client.patch(f"/tasks/{task_id}", json={"status": "Done"})
+    assert done_response.status_code == 200
+
+    response = client.patch(f"/tasks/{task_id}", json={"status": "ToDo"})
+    assert response.status_code == 422
+    assert "Invalid status transition from Done to ToDo." in response.json()["detail"]
+
+
 # ----- DELETE /tasks/{id} -----
 
 def test_delete_existing_returns_204_no_body(client, created_task):
