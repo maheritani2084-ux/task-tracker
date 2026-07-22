@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Task Tracker</title>
+
     <style>
       :root {
         font-family: "Inter", "Segoe UI", Arial, sans-serif;
@@ -182,6 +183,12 @@
         color: #b91c1c;
       }
 
+      .pill-overdue {
+        background: #ffe4e6;
+        color: #9f1239;
+        border: 1px solid #fda4af;
+      }
+
       .pill-medium {
         background: #fef3c7;
         color: #b45309;
@@ -292,6 +299,16 @@
         border-color: #2563eb;
       }
 
+      .field input.invalid {
+        border-color: #b91c1c;
+        background: #fef2f2;
+      }
+
+      .hint-text {
+        color: #64748b;
+        font-size: 12px;
+      }
+
       .modal-actions {
         display: flex;
         justify-content: flex-end;
@@ -373,6 +390,11 @@
             <select id="priorityInput" name="priority"></select>
           </div>
           <div class="field">
+            <label for="dueDateInput">Due date</label>
+            <input id="dueDateInput" name="due_date" placeholder="YYYY-MM-DD" autocomplete="off" />
+            <div class="hint-text">Due date must be YYYY-MM-DD</div>
+          </div>
+          <div class="field">
             <label for="assigneeInput">Assignee</label>
             <input id="assigneeInput" name="assignee" />
           </div>
@@ -399,6 +421,7 @@
       const descriptionInput = document.getElementById('descriptionInput');
       const statusInput = document.getElementById('statusInput');
       const priorityInput = document.getElementById('priorityInput');
+      const dueDateInput = document.getElementById('dueDateInput');
       const assigneeInput = document.getElementById('assigneeInput');
       const taskIdInput = document.getElementById('taskIdInput');
       const modalTitle = document.getElementById('modalTitle');
@@ -529,8 +552,48 @@
         descriptionInput.value = '';
         statusInput.value = 'ToDo';
         priorityInput.value = 'Medium';
+        dueDateInput.value = '';
         assigneeInput.value = '';
         taskIdInput.value = '';
+        dueDateInput.classList.remove('invalid');
+      }
+
+      function isValidDueDate(value) {
+        if (!value) {
+          return true;
+        }
+
+        const trimmedValue = value.trim();
+        if (!trimmedValue) {
+          return true;
+        }
+
+        const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmedValue);
+        if (!match) {
+          return false;
+        }
+
+        const [, yearText, monthText, dayText] = match;
+        const year = Number(yearText);
+        const month = Number(monthText);
+        const day = Number(dayText);
+        const parsedDate = new Date(Date.UTC(year, month - 1, day));
+
+        return parsedDate.getUTCFullYear() === year
+          && parsedDate.getUTCMonth() === month - 1
+          && parsedDate.getUTCDate() === day;
+      }
+
+      function validateDueDateInput() {
+        const valid = isValidDueDate(dueDateInput.value);
+        if (valid) {
+          dueDateInput.classList.remove('invalid');
+          return true;
+        }
+
+        dueDateInput.classList.add('invalid');
+        formError.textContent = 'Due date must be YYYY-MM-DD';
+        return false;
       }
 
       function getErrorMessage(errorData) {
@@ -558,7 +621,9 @@
           descriptionInput.value = task.description || '';
           statusInput.value = task.status || 'ToDo';
           priorityInput.value = task.priority || 'Medium';
+          dueDateInput.value = task.due_date || '';
           assigneeInput.value = task.assignee || '';
+          dueDateInput.classList.remove('invalid');
         } else {
           modalTitle.textContent = 'New Task';
           resetForm();
@@ -577,11 +642,16 @@
       async function saveTask(event) {
         event.preventDefault();
 
+        if (!validateDueDateInput()) {
+          return;
+        }
+
         const payload = {
           title: titleInput.value.trim(),
           description: descriptionInput.value,
           status: statusInput.value,
           priority: priorityInput.value,
+          due_date: dueDateInput.value.trim() || null,
           assignee: assigneeInput.value.trim() || null,
         };
 
@@ -630,6 +700,10 @@
           : task.priority === 'Medium'
             ? 'pill-medium'
             : 'pill-low';
+        const dueLabel = task.due_date ? escapeHtml(new Date(`${task.due_date}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })) : 'No due date';
+        const overdueMarkup = task.is_overdue
+          ? '<span class="pill pill-overdue" aria-label="Overdue">Overdue</span>'
+          : '<span></span>';
 
         article.innerHTML = `
           <h3>${escapeHtml(task.title)}</h3>
@@ -637,6 +711,10 @@
           <div class="meta-row">
             <span class="pill ${priorityClass}">${escapeHtml(task.priority)}</span>
             <span>${escapeHtml(task.assignee || 'Unassigned')}</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-date">${dueLabel}</span>
+            ${overdueMarkup}
           </div>
           <div class="meta-row">
             <span></span>

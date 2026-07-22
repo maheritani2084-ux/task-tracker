@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from enum import Enum
 from typing import Optional
 
@@ -37,11 +37,23 @@ class TaskCreate(BaseModel):
     status: TaskStatus = TaskStatus.TODO
     priority: TaskPriority = TaskPriority.MEDIUM
     assignee: Optional[str] = None
+    due_date: date | None = None
 
     @field_validator("title")
     @classmethod
     def _check_title(cls, value: str) -> str:
         return _validate_title(value)
+
+    @field_validator("due_date")
+    @classmethod
+    def _check_due_date(cls, value: date | None) -> date | None:
+        if value is None:
+            return value
+        if isinstance(value, datetime):
+            raise ValueError("due_date must be a date in YYYY-MM-DD format")
+        if value < date.today() - timedelta(days=365):
+            raise ValueError("due_date cannot be more than 365 days in the past")
+        return value
 
 
 class TaskUpdate(BaseModel):
@@ -52,6 +64,7 @@ class TaskUpdate(BaseModel):
     status: Optional[TaskStatus] = None
     priority: Optional[TaskPriority] = None
     assignee: Optional[str] = None
+    due_date: date | None = None
 
     @field_validator("title")
     @classmethod
@@ -59,6 +72,17 @@ class TaskUpdate(BaseModel):
         if value is None:
             return value
         return _validate_title(value)
+
+    @field_validator("due_date")
+    @classmethod
+    def _check_due_date(cls, value: date | None) -> date | None:
+        if value is None:
+            return value
+        if isinstance(value, datetime):
+            raise ValueError("due_date must be a date in YYYY-MM-DD format")
+        if value < date.today() - timedelta(days=365):
+            raise ValueError("due_date cannot be more than 365 days in the past")
+        return value
 
 
 class TaskResponse(BaseModel):
@@ -70,5 +94,21 @@ class TaskResponse(BaseModel):
     status: TaskStatus
     priority: TaskPriority
     assignee: Optional[str]
+    due_date: date | None = None
+    is_overdue: bool = False
+    created_at: datetime
+    updated_at: datetime
+
+
+class TaskStorageRecord(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    title: str
+    description: str
+    status: TaskStatus
+    priority: TaskPriority
+    assignee: Optional[str]
+    due_date: date | None = None
     created_at: datetime
     updated_at: datetime

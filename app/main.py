@@ -7,9 +7,10 @@ in later modules per ADR-001.
 from pathlib import Path
 from typing import Optional
 from datetime import datetime, timezone
-from fastapi import HTTPException,FastAPI, status
+from fastapi import HTTPException, FastAPI, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+
 from app import storage
 from app.models import TaskCreate, TaskResponse, TaskUpdate, TaskStatus
 
@@ -56,10 +57,29 @@ def read_frontend() -> FileResponse:
 
 
 @app.get("/tasks", response_model=list[TaskResponse], tags=["tasks"])
-def list_tasks(status: Optional[TaskStatus] = None) -> list[TaskResponse]:
+def list_tasks(status: Optional[TaskStatus] = None, overdue: Optional[str] = Query(default=None)) -> list[TaskResponse]:
     tasks = storage.get_all_tasks()
     if status is not None:
         tasks = [t for t in tasks if t.status == status]
+
+    overdue_value: Optional[bool] = None
+    if overdue is not None:
+        normalized = overdue.lower()
+        if normalized in {"true", "1"}:
+            overdue_value = True
+        elif normalized in {"false", "0"}:
+            overdue_value = False
+        else:
+            raise HTTPException(status_code=422, detail="Invalid value for overdue")
+
+    if overdue_value is not None:
+        tasks = [
+            t.model_copy(update={"is_overdue": storage.compute_is_overdue(t.model_dump())})
+            for t in tasks
+            if storage.compute_is_overdue(t.model_dump()) is overdue_value
+        ]
+    else:
+        tasks = [t.model_copy(update={"is_overdue": storage.compute_is_overdue(t.model_dump())}) for t in tasks]
     return tasks
 
 
