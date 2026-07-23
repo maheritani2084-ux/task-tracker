@@ -52,8 +52,24 @@
   - Expected behavior: invalid due dates should be rejected with 422.
   - Observed result: passed.
 
-## 6. Summary and next steps
-- Verified status: full suite passing.
-- No code changes were required during this validation pass.
+## 6. Refactor results
+- Refactor scope:
+  - Extracted a formatDueDate helper for due-date rendering.
+  - Moved overdue pill markup into a renderDueDateRow helper.
+  - Removed duplicated null-check behavior between edit and create modal setup by using a shared taskData path.
+  - Renamed the temporary task lookup variable to existingTask for clarity.
+- Verification after refactor:
+  - Command run: c:/task-tracker/venv/Scripts/python.exe -m pytest -q
+  - Result: 48 passed in 0.51s
+- Behavior preserved:
+  - Overdue computation remained backend-driven and unchanged.
+  - The UI still reads the backend is_overdue flag verbatim.
+  - Due dates are still sent and received as ISO date strings.
+  - Empty due dates still go to the API as null.
+  - The overdue pill still uses the same visible text, aria-label, and styling.
+
+## 7. Summary and next steps
+- Verified status: full suite passing after the refactor.
+- No functional regressions were introduced by this refactor.
 
 

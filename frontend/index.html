@@ -611,21 +611,44 @@
         return 'Unable to save task.';
       }
 
+      function formatDueDate(taskDueDate) {
+        if (!taskDueDate) {
+          return 'No due date';
+        }
+
+        return escapeHtml(new Date(`${taskDueDate}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }));
+      }
+
+      function renderDueDateRow(task) {
+        const overdueMarkup = task.is_overdue
+          ? '<span class="pill pill-overdue" aria-label="Overdue">Overdue</span>'
+          : '<span></span>';
+
+        return `
+          <div class="meta-row">
+            <span class="meta-date">${formatDueDate(task.due_date)}</span>
+            ${overdueMarkup}
+          </div>
+        `;
+      }
+
       function openModal(task = null) {
         formError.textContent = '';
 
-        if (task) {
-          modalTitle.textContent = 'Edit Task';
-          taskIdInput.value = task.id;
-          titleInput.value = task.title || '';
-          descriptionInput.value = task.description || '';
-          statusInput.value = task.status || 'ToDo';
-          priorityInput.value = task.priority || 'Medium';
-          dueDateInput.value = task.due_date || '';
-          assigneeInput.value = task.assignee || '';
-          dueDateInput.classList.remove('invalid');
-        } else {
-          modalTitle.textContent = 'New Task';
+        const taskData = task ?? {};
+        const isEditing = Boolean(task);
+
+        modalTitle.textContent = isEditing ? 'Edit Task' : 'New Task';
+        taskIdInput.value = task?.id ?? '';
+        titleInput.value = taskData.title ?? '';
+        descriptionInput.value = taskData.description ?? '';
+        statusInput.value = taskData.status || 'ToDo';
+        priorityInput.value = taskData.priority || 'Medium';
+        dueDateInput.value = taskData.due_date || '';
+        assigneeInput.value = taskData.assignee || '';
+        dueDateInput.classList.remove('invalid');
+
+        if (!isEditing) {
           resetForm();
         }
 
@@ -660,16 +683,16 @@
           return;
         }
 
-        const taskId = taskIdInput.value;
-        const isEditing = Boolean(taskId);
-        const currentTask = isEditing ? tasks.find((item) => item.id === taskId) : null;
+        const taskIdentifier = taskIdInput.value;
+        const isEditing = Boolean(taskIdentifier);
+        const existingTask = isEditing ? tasks.find((item) => item.id === taskIdentifier) : null;
 
-        if (isEditing && currentTask && payload.status === currentTask.status) {
+        if (isEditing && existingTask && payload.status === existingTask.status) {
           delete payload.status;
         }
 
         try {
-          const response = await fetch(`http://localhost:8000/tasks${isEditing ? `/${taskId}` : ''}`, {
+          const response = await fetch(`http://localhost:8000/tasks${isEditing ? `/${taskIdentifier}` : ''}`, {
             method: isEditing ? 'PATCH' : 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -700,10 +723,6 @@
           : task.priority === 'Medium'
             ? 'pill-medium'
             : 'pill-low';
-        const dueLabel = task.due_date ? escapeHtml(new Date(`${task.due_date}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })) : 'No due date';
-        const overdueMarkup = task.is_overdue
-          ? '<span class="pill pill-overdue" aria-label="Overdue">Overdue</span>'
-          : '<span></span>';
 
         article.innerHTML = `
           <h3>${escapeHtml(task.title)}</h3>
@@ -712,10 +731,7 @@
             <span class="pill ${priorityClass}">${escapeHtml(task.priority)}</span>
             <span>${escapeHtml(task.assignee || 'Unassigned')}</span>
           </div>
-          <div class="meta-row">
-            <span class="meta-date">${dueLabel}</span>
-            ${overdueMarkup}
-          </div>
+          ${renderDueDateRow(task)}
           <div class="meta-row">
             <span></span>
             <button class="edit-button" type="button">Edit</button>
