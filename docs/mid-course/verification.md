@@ -4,7 +4,7 @@
 - Command run:
   - c:/task-tracker/venv/Scripts/python.exe -m pytest -q
 - Result:
-  - 48 passed in 0.49s
+  - 56 passed in 0.89s
 - Status: full suite passing
 
 ## 2. Full behavior contract
@@ -63,7 +63,7 @@
   - Renamed the temporary task lookup variable to existingTask for clarity.
 - Verification after refactor:
   - Command run: c:/task-tracker/venv/Scripts/python.exe -m pytest -q
-  - Result: 48 passed in 0.51s
+  - Result: 56 passed in 0.89s
 - Behavior preserved:
   - Overdue computation remained backend-driven and unchanged.
   - The UI still reads the backend is_overdue flag verbatim.
