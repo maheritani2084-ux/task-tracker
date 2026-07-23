@@ -43,6 +43,7 @@ def _validate_tags(value: list[str] | None) -> list[str] | None:
         stripped_tag = item.strip()
         if not stripped_tag:
             raise ValueError("tags must not contain blank values")
+        
         if len(stripped_tag) > 30:
             raise ValueError("tags must be at most 30 characters")
 

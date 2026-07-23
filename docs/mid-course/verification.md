@@ -41,7 +41,7 @@
   - The current browser view showed the empty-state board because no tasks were loaded yet.
   - The app responded with the task board HTML at the expected URL.
 
-## 5. Regression evidence
+## 5. Break-test evidence
 - Test: test_is_overdue_true_when_due_date_is_past_and_status_todo
   - Expected behavior: a past due date on a ToDo task should be marked overdue.
   - Observed result: passed.
@@ -51,6 +51,9 @@
 - Test: test_patch_invalid_due_date_returns_422
   - Expected behavior: invalid due dates should be rejected with 422.
   - Observed result: passed.
+- Test: test_is_overdue_false_when_due_date_is_past_and_status_done
+  - Expected behavior: a past due date on a Done task should not be marked overdue.
+  - Observed result: this breaks if the `if status == TaskStatus.DONE: return False` block is removed from [app/storage.py](app/storage.py).
 
 ## 6. Refactor results
 - Refactor scope:
@@ -119,6 +122,12 @@
 - Break test 2: test_patch_title_only_preserves_existing_tags
   - Expected behavior: changing only the title should leave the existing tags unchanged.
   - Observed result: passed.
+- Break test 3: test_patch_invalid_tag_leaves_stored_tags_unchanged
+  - Expected behavior: submitting an invalid tag should be rejected without modifying the stored tags.
+  - Observed result: passed.
+- Break test 4: test_create_task_with_empty_string_tag_returns_422
+  - Expected behavior: creating a task with an empty string tag should return 422.
+  - Observed result: this breaks if the blank-tag guard is removed from [app/models.py](app/models.py).
 
 ### Refactor test
 - Refactor scope:

@@ -24,8 +24,10 @@ def compute_is_overdue(task: dict) -> bool:
         return False
     if isinstance(due_date, str):
         due_date = date.fromisoformat(due_date)
+    ##put back if status == TaskStatus.DONE: return False block
     if status == TaskStatus.DONE:
         return False
+
     return due_date < date.today()
 
 

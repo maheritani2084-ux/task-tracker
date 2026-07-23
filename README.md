@@ -1,150 +1,63 @@
-\# Task Tracker API — Module 1
+# Mid-Course Project Guide
 
+This project is a simple task tracker with a FastAPI backend and a vanilla HTML/JavaScript frontend.
 
+## Run the backend
 
-A learning-project REST API built with Python and FastAPI. Module 1 provides
-
-the project skeleton and a single health-check endpoint. Task CRUD, filtering,
-
-and JSON file storage are added in later modules per ADR-001.
-
-
-
-\## Requirements
-
-
-
-\- Python 3.11 or newer
-
-
-
-\## Setup
-
-
-
-Clone or create the project, then from the `task-tracker/` directory create and
-
-activate a virtual environment and install dependencies.
-
-
-
-\*\*Linux / macOS (bash):\*\*
-
-
+From the project root, start the backend with:
 
 ```bash
-
-python3 -m venv venv
-
-source venv/bin/activate
-
-pip install --upgrade pip
-
-pip install -r requirements.txt
-
+c:/task-tracker/venv/Scripts/python.exe -m uvicorn app.main:app --reload --port 8000
 ```
 
+The API will be available at:
+- http://127.0.0.1:8000/docs
+- http://127.0.0.1:8000/tasks
 
+## Open the frontend
 
-\*\*Windows (PowerShell):\*\*
+The frontend is served by the FastAPI app. Open the app in a browser at:
 
-
-
-```powershell
-
-python -m venv venv
-
-.\\venv\\Scripts\\Activate.ps1
-
-python -m pip install --upgrade pip
-
-pip install -r requirements.txt
-
+```text
+http://127.0.0.1:8000/
 ```
 
-
-
-After installing, verify the resolved versions:
-
-
+If you want to serve the static frontend directly, you can also run:
 
 ```bash
-
-pip freeze
-
+c:/task-tracker/venv/Scripts/python.exe -m http.server 5500
 ```
 
+Then open:
 
+```text
+http://127.0.0.1:5500/frontend/
+```
 
-Optionally copy the example environment file:
+## Run tests
 
-
+Run the full tag and frontend test suite with:
 
 ```bash
-
-cp .env.example .env      # Windows PowerShell: Copy-Item .env.example .env
-
+c:/task-tracker/venv/Scripts/python.exe -m pytest -q tests/test_tags.py tests/test_frontend.py
 ```
 
-
-
-\## Run
-
-
+Run the backend tag tests only with:
 
 ```bash
-
-uvicorn app.main:app --reload
-
+c:/task-tracker/venv/Scripts/python.exe -m pytest -q tests/test_tags.py
 ```
 
-
-
-The server starts at `http://127.0.0.1:8000`.
-
-
-
-\## Test the health endpoint
-
-
+Run the full project test suite with:
 
 ```bash
-
-curl http://127.0.0.1:8000/health
-
+c:/task-tracker/venv/Scripts/python.exe -m pytest -q
 ```
 
+## Notes
 
-
-Expected response (HTTP 200); the timestamp reflects the current UTC time:
-
-
-
-```json
-
-{ "status": "ok", "timestamp": "2026-07-05T12:34:56.789+00:00" }
-
-```
-
-
-
-\## Interactive API docs (Swagger)
-
-
-
-With the server running, open:
-
-
-
-```
-
-http://127.0.0.1:8000/docs
-
-```
-
-
-
-The auto-generated Swagger UI lists the available endpoints. ReDoc is also
-
-available at `http://127.0.0.1:8000/redoc`.
+- The backend must be running before opening the frontend through the FastAPI app.
+- If you use the static server for the frontend, the API requests still need the backend running on port 8000.
+- [docs/mid-course/mini-adr.md](docs/mid-course/mini-adr.md)
+- [docs/mid-course/user-stories.md](docs/mid-course/user-stories.md)
 
