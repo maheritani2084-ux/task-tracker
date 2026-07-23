@@ -292,6 +292,45 @@
         font: inherit;
       }
 
+      .tag-filter {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 220px;
+      }
+
+      .tag-filter label {
+        font-size: 12px;
+        font-weight: 700;
+        color: #475569;
+      }
+
+      .tag-filter input {
+        padding: 9px 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 999px;
+        background: #ffffff;
+        font: inherit;
+      }
+
+      .tag-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 8px 0 6px;
+      }
+
+      .tag-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: #dbeafe;
+        color: #1d4ed8;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
       .field input:focus,
       .field textarea:focus,
       .field select:focus {
@@ -359,6 +398,10 @@
       </div>
       <div class="page-header-actions">
         <div class="stat-pill">Balanced priorities</div>
+        <div class="tag-filter">
+          <label for="tagFilterInput">Filter by tag</label>
+          <input id="tagFilterInput" name="tagFilter" type="text" placeholder="Filter by tag" />
+        </div>
         <button type="button" id="newTaskButton">New Task</button>
       </div>
     </header>
@@ -398,6 +441,11 @@
             <label for="assigneeInput">Assignee</label>
             <input id="assigneeInput" name="assignee" />
           </div>
+          <div class="field">
+            <label for="tagsInput">Tags</label>
+            <input id="tagsInput" name="tags" placeholder="work, urgent" autocomplete="off" />
+            <div class="hint-text">Separate tags with commas</div>
+          </div>
           <div id="formError" class="error-text"></div>
           <div class="modal-actions">
             <button type="button" id="cancelButton">Cancel</button>
@@ -423,6 +471,8 @@
       const priorityInput = document.getElementById('priorityInput');
       const dueDateInput = document.getElementById('dueDateInput');
       const assigneeInput = document.getElementById('assigneeInput');
+      const tagsInput = document.getElementById('tagsInput');
+      const tagFilterInput = document.getElementById('tagFilterInput');
       const taskIdInput = document.getElementById('taskIdInput');
       const modalTitle = document.getElementById('modalTitle');
       const newTaskButton = document.getElementById('newTaskButton');
@@ -431,6 +481,7 @@
       const formError = document.getElementById('formError');
       let tasks = [];
       let editingTaskId = null;
+      let currentTagFilter = '';
       const sampleTasks = [
         {
           title: 'Draft onboarding checklist',
@@ -504,11 +555,34 @@
         return placeholder;
       }
 
+      function parseTagsInput(value) {
+        if (value === undefined || value === null) {
+          return { tags: [], valid: true };
+        }
+
+        const rawValue = String(value);
+        if (rawValue.trim() === '') {
+          return { tags: [], valid: true };
+        }
+
+        const parts = rawValue.split(',').map((part) => part.trim()).filter((part) => part !== '');
+        if (parts.length === 0) {
+          return { tags: [], valid: false, message: 'Tags cannot be empty' };
+        }
+
+        return { tags: parts, valid: true };
+      }
+
       async function fetchTasks() {
         renderBoard([], 'loading');
 
         try {
-          const response = await fetch('http://localhost:8000/tasks');
+          const url = new URL('http://localhost:8000/tasks');
+          if (currentTagFilter.trim()) {
+            url.searchParams.set('tag', currentTagFilter.trim());
+          }
+
+          const response = await fetch(url.toString());
           if (!response.ok) {
             throw new Error('Unable to load tasks');
           }
@@ -554,8 +628,10 @@
         priorityInput.value = 'Medium';
         dueDateInput.value = '';
         assigneeInput.value = '';
+        tagsInput.value = '';
         taskIdInput.value = '';
         dueDateInput.classList.remove('invalid');
+        tagsInput.classList.remove('invalid');
       }
 
       function isValidDueDate(value) {
@@ -632,6 +708,16 @@
         `;
       }
 
+      function matchesTagFilter(task) {
+        const filterValue = currentTagFilter.trim().toLowerCase();
+        if (!filterValue) {
+          return true;
+        }
+
+        const tags = Array.isArray(task.tags) ? task.tags : [];
+        return tags.some((tag) => String(tag).toLowerCase().includes(filterValue));
+      }
+
       function openModal(task = null) {
         formError.textContent = '';
 
@@ -646,7 +732,9 @@
         priorityInput.value = taskData.priority || 'Medium';
         dueDateInput.value = taskData.due_date || '';
         assigneeInput.value = taskData.assignee || '';
+        tagsInput.value = Array.isArray(taskData.tags) ? taskData.tags.join(', ') : '';
         dueDateInput.classList.remove('invalid');
+        tagsInput.classList.remove('invalid');
 
         if (!isEditing) {
           resetForm();
@@ -669,6 +757,13 @@
           return;
         }
 
+        const parsedTags = parseTagsInput(tagsInput.value);
+        if (!parsedTags.valid) {
+          tagsInput.classList.add('invalid');
+          formError.textContent = parsedTags.message;
+          return;
+        }
+
         const payload = {
           title: titleInput.value.trim(),
           description: descriptionInput.value,
@@ -676,6 +771,7 @@
           priority: priorityInput.value,
           due_date: dueDateInput.value.trim() || null,
           assignee: assigneeInput.value.trim() || null,
+          tags: parsedTags.tags,
         };
 
         if (!payload.title) {
@@ -712,6 +808,16 @@
         }
       }
 
+      function renderTagChips(task) {
+        const tags = Array.isArray(task.tags) ? task.tags.filter(Boolean) : [];
+        if (tags.length === 0) {
+          return '';
+        }
+
+        const chips = tags.map((tag) => `<span class="tag-chip">${escapeHtml(tag)}</span>`).join('');
+        return `<div class="tag-row">${chips}</div>`;
+      }
+
       function createCard(task) {
         const article = document.createElement('article');
         article.className = 'card';
@@ -731,6 +837,7 @@
             <span class="pill ${priorityClass}">${escapeHtml(task.priority)}</span>
             <span>${escapeHtml(task.assignee || 'Unassigned')}</span>
           </div>
+          ${renderTagChips(task)}
           ${renderDueDateRow(task)}
           <div class="meta-row">
             <span></span>
@@ -801,6 +908,7 @@
       }
 
       function renderBoard(taskList, state = 'ready', errorMessage = 'Unable to load tasks.') {
+        const visibleTasks = taskList.filter(matchesTagFilter);
         board.innerHTML = '';
 
         if (state === 'loading') {
@@ -853,7 +961,7 @@
           });
 
           const heading = document.createElement('h2');
-          const tasksForColumn = taskList
+          const tasksForColumn = visibleTasks
             .filter((task) => task.status === column.key)
             .sort(compareTasks);
           heading.textContent = `${column.label} (${tasksForColumn.length})`;
@@ -870,6 +978,14 @@
           board.appendChild(columnElement);
         });
       }
+      let debounceId;
+      tagFilterInput.addEventListener('input', () => {
+        currentTagFilter = tagFilterInput.value;
+        clearTimeout(debounceId);
+        debounceId = setTimeout(() => {
+          renderBoard(tasks, tasks.length > 0 ? 'ready' : 'empty');
+        }, 200);
+      });
 
       newTaskButton.addEventListener('click', () => openModal());
       cancelButton.addEventListener('click', closeModal);

@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
 from app import storage
-from app.models import TaskCreate, TaskResponse, TaskUpdate, TaskStatus
+from app.models import TaskCreate, TaskPriority, TaskResponse, TaskUpdate, TaskStatus
 
 from app.business_rules import validate_status_transition
 
@@ -57,10 +57,12 @@ def read_frontend() -> FileResponse:
 
 
 @app.get("/tasks", response_model=list[TaskResponse], tags=["tasks"])
-def list_tasks(status: Optional[TaskStatus] = None, overdue: Optional[str] = Query(default=None)) -> list[TaskResponse]:
+def list_tasks(status: Optional[TaskStatus] = None, priority: Optional[TaskPriority] = None, overdue: Optional[str] = Query(default=None), tag: Optional[str] = Query(default=None)) -> list[TaskResponse]:
     tasks = storage.get_all_tasks()
     if status is not None:
         tasks = [t for t in tasks if t.status == status]
+    if priority is not None:
+        tasks = [t for t in tasks if t.priority == priority]
 
     overdue_value: Optional[bool] = None
     if overdue is not None:
@@ -80,6 +82,14 @@ def list_tasks(status: Optional[TaskStatus] = None, overdue: Optional[str] = Que
         ]
     else:
         tasks = [t.model_copy(update={"is_overdue": storage.compute_is_overdue(t.model_dump())}) for t in tasks]
+
+    if tag is not None:
+        normalized_tag = tag.strip()
+        if normalized_tag:
+            tasks = [t for t in tasks if any(item.casefold() == normalized_tag.casefold() for item in t.tags)]
+        else:
+            tasks = []
+
     return tasks
 
 

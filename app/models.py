@@ -4,7 +4,7 @@ from datetime import date, datetime, timedelta
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 
@@ -29,6 +29,36 @@ def _validate_title(value: str) -> str:
     return stripped
 
 
+def _validate_tags(value: list[str] | None) -> list[str] | None:
+    if value is None:
+        return None
+
+    normalized_tags: list[str] = []
+    seen_tags: set[str] = set()
+
+    for item in value:
+        if not isinstance(item, str):
+            raise ValueError("tags must contain only strings")
+
+        stripped_tag = item.strip()
+        if not stripped_tag:
+            raise ValueError("tags must not contain blank values")
+        if len(stripped_tag) > 30:
+            raise ValueError("tags must be at most 30 characters")
+
+        normalized_key = stripped_tag.casefold()
+        if normalized_key in seen_tags:
+            continue
+
+        seen_tags.add(normalized_key)
+        normalized_tags.append(stripped_tag)
+
+    if len(normalized_tags) > 10:
+        raise ValueError("tags must be at most 10 values")
+
+    return normalized_tags
+
+
 class TaskCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -38,6 +68,7 @@ class TaskCreate(BaseModel):
     priority: TaskPriority = TaskPriority.MEDIUM
     assignee: Optional[str] = None
     due_date: date | None = None
+    tags: list[str] = Field(default_factory=list)
 
     @field_validator("title")
     @classmethod
@@ -55,6 +86,11 @@ class TaskCreate(BaseModel):
             raise ValueError("due_date cannot be more than 365 days in the past")
         return value
 
+    @field_validator("tags")
+    @classmethod
+    def _check_tags(cls, value: list[str]) -> list[str]:
+        return _validate_tags(value) or []
+
 
 class TaskUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -65,6 +101,7 @@ class TaskUpdate(BaseModel):
     priority: Optional[TaskPriority] = None
     assignee: Optional[str] = None
     due_date: date | None = None
+    tags: list[str] | None = None
 
     @field_validator("title")
     @classmethod
@@ -84,6 +121,11 @@ class TaskUpdate(BaseModel):
             raise ValueError("due_date cannot be more than 365 days in the past")
         return value
 
+    @field_validator("tags")
+    @classmethod
+    def _check_tags(cls, value: list[str] | None) -> list[str] | None:
+        return _validate_tags(value)
+
 
 class TaskResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -95,6 +137,7 @@ class TaskResponse(BaseModel):
     priority: TaskPriority
     assignee: Optional[str]
     due_date: date | None = None
+    tags: list[str] = Field(default_factory=list)
     is_overdue: bool = False
     created_at: datetime
     updated_at: datetime
@@ -110,5 +153,6 @@ class TaskStorageRecord(BaseModel):
     priority: TaskPriority
     assignee: Optional[str]
     due_date: date | None = None
+    tags: list[str] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime

@@ -247,3 +247,47 @@ Output format:
 - Section 4: Manual browser checks
 - Section 5: Regression evidence
 - Section 6: Summary and next steps
+
+## Feature 2: tags/labels
+### Prompt 1: backend tag support
+- Prompt used:
+  - "You are a senior Python backend engineer. Add tag support to my FastAPI task tracker. Context files: app/models.py, app/storage.py, app/main.py. Implement the backend so tasks can store tags, validate them, and support tag-based filtering on GET /tasks."
+- What the prompt returned:
+  - Added tag fields to the task models, validated tag input, persisted tags in storage, and enabled tag-based filtering on GET /tasks.
+- What I did:
+  - Accepted the implementation and kept the backend changes.
+
+### Prompt 2: frontend tag UI
+- Prompt used:
+  - "You are a senior frontend engineer. Update the Kanban board so tasks can be tagged in the modal and rendered as chips on cards while preserving the existing board behavior."
+- What the prompt returned:
+  - Added tag input handling to the modal, rendered tag chips on cards, and preserved tag data during create/edit flows.
+- What I did:
+  - Accepted the main UI changes, then edited the result to better preserve the existing flow and avoid regressions.
+
+### Prompt 3: tag filter bug fix
+- Prompt used:
+  - "Please fix the tag filter. It is not working properly in the frontend."
+- What the prompt returned:
+  - A first pass that touched the filter flow, but it did not fully capture the expected partial-match behavior for cases like 'work' matching 'work, urgent'.
+- What I did:
+  - Rejected the vague first pass as incomplete, then rewrote it into a stronger prompt and applied the corrected implementation.
+
+### Weak prompt rewritten into a stronger prompt
+- Weak prompt:
+  - "Please fix the tag filter. It is not working properly in the frontend."
+- Stronger prompt:
+  - "You are a senior frontend engineer. Fix the tag filter in the Kanban board so the visible task list updates from the current tag input, supports partial matches, and includes tasks whose tags contain values like 'work' even when the stored tags are 'work, urgent'. Preserve the existing board layout and card rendering, and do not introduce new UI patterns."
+- What the stronger prompt returned:
+  - A targeted fix that aligned with the partial-match requirement and kept the rest of the board behavior intact.
+- What I did:
+  - Accepted the stronger version and kept the change.
+
+### Prompt 4: verification evidence
+- Prompt used:
+  - "Generate verification evidence for Feature 2, including baseline checks, backend results, manual browser checks, behavior contract, and break-test evidence."
+- What the prompt returned:
+  - A structured verification summary with pytest output, browser check results, and notes on the behavior contract.
+- What I did:
+  - Accepted the summary and recorded it in the feature verification documentation.
+

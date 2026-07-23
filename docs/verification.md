@@ -1,4 +1,4 @@
-# Overdue-date verification report
+# Feature 1: Overdue-date verification report
 
 ## 1. Full pytest suite
 - Command run:
@@ -71,5 +71,67 @@
 ## 7. Summary and next steps
 - Verified status: full suite passing after the refactor.
 - No functional regressions were introduced by this refactor.
+
+
+## Feature 2: tags/labels verification report
+
+### Baseline check
+- Command run:
+  - c:/task-tracker/venv/Scripts/python.exe -m pytest -q tests/test-tags.py tests/test_frontend.py
+- Result:
+  - 12 passed in 0.27s
+- Status:
+  - Baseline tag and frontend contract checks passed.
+
+### Backend test results
+- Command run:
+  - c:/task-tracker/venv/Scripts/python.exe -m pytest -q tests/test-tags.py
+- Result:
+  - 8 passed in 0.10s
+- Focused regression run:
+  - c:/task-tracker/venv/Scripts/python.exe -m pytest -q tests/test-tags.py -k "test_list_tasks_filter_by_tag_returns_only_matches or test_patch_title_only_preserves_existing_tags"
+- Result:
+  - 2 passed, 6 deselected in 0.04s
+
+### Manual browser checks
+- URL checked:
+  - http://127.0.0.1:8000/
+- Observed result:
+  - The app returned HTTP 200 and served the Kanban board HTML successfully.
+  - The frontend shell rendered, confirming the app was reachable in the browser.
+
+### Behavior contract
+- API contract:
+  - Creating tasks with tags should persist and echo the provided tags.
+  - Updating tasks should preserve existing tags unless the request explicitly changes them.
+  - Filtering tasks by tag should return only matching tasks.
+- UI contract:
+  - Tag input should be accepted in the modal.
+  - Tags should render visibly on task cards.
+  - The active tag filter should narrow the visible board and clear correctly when removed.
+- Validation result:
+  - The implementation satisfied the behavior contract based on the passing backend tests and successful frontend availability check.
+
+### Break-test evidence
+- Break test 1: test_list_tasks_filter_by_tag_returns_only_matches
+  - Expected behavior: filtering by a tag should return only tasks that include that tag.
+  - Observed result: passed.
+- Break test 2: test_patch_title_only_preserves_existing_tags
+  - Expected behavior: changing only the title should leave the existing tags unchanged.
+  - Observed result: passed.
+
+### Refactor test
+- Refactor scope:
+  - Updated the frontend filter logic so the board renders from the current tag filter input and applies partial tag matching.
+- Verification after refactor:
+  - Command run: c:/task-tracker/venv/Scripts/python.exe -m pytest -q tests/test-tags.py tests/test_frontend.py
+  - Result: 12 passed in 0.27s
+- Behavior preserved:
+  - Tag filtering still returns only matching tasks.
+  - Existing tag data remains intact during title-only updates.
+  - The frontend remains reachable and the board continues to load correctly.
+
+### Notes
+- The Feature 2 verification was captured after the tag support work and confirms the tag/label flow remains functional and stable.
 
 
