@@ -51,9 +51,17 @@
 - Test: test_patch_invalid_due_date_returns_422
   - Expected behavior: invalid due dates should be rejected with 422.
   - Observed result: passed.
-- Test: test_is_overdue_false_when_due_date_is_past_and_status_done
+
+## check modification 
+  - Break Test for Feature 1(resubmitted): test_is_overdue_false_when_due_date_is_past_and_status_done
+
   - Expected behavior: a past due date on a Done task should not be marked overdue.
-  - Observed result: this breaks if the `if status == TaskStatus.DONE: return False` block is removed from [app/storage.py](app/storage.py).
+  - Defect introduced: commented out the `if status == TaskStatus.DONE: return False`
+    block in `compute_is_overdue` in [app/storage.py](app/storage.py).
+  - Observed failure: the Done column task with a past due date incorrectly rendered the red "Overdue" pill in the browser, confirming the guard is what suppresses
+    overdue state for completed tasks.
+  - Restoration: the removed block was restored to `app/storage.py`.
+  - Post-restoration result: the "Overdue" pill correctly disappeared from the Done task; board rendering returned to expected behavior.
 
 ## 6. Refactor results
 - Refactor scope:
@@ -125,9 +133,18 @@
 - Break test 3: test_patch_invalid_tag_leaves_stored_tags_unchanged
   - Expected behavior: submitting an invalid tag should be rejected without modifying the stored tags.
   - Observed result: passed.
+## modified
 - Break test 4: test_create_task_with_empty_string_tag_returns_422
   - Expected behavior: creating a task with an empty string tag should return 422.
-  - Observed result: this breaks if the blank-tag guard is removed from [app/models.py](app/models.py).
+  - Defect introduced: removed the blank-tag guard
+    (`if not stripped_tag: raise ValueError(...)`) from `_validate_tags` in
+    [app/models.py](app/models.py).
+  - Observed failure: `pytest` reported
+    `test_create_task_with_empty_string_tag_returns_422` as FAILED — the API accepted
+    the blank tag and returned 201 instead of 422.
+  - Restoration: the blank-tag guard was restored to `app/models.py`.
+  - Post-restoration result: the test passed again and the tag input rejected empty
+    values normally in the UI.
 
 ### Refactor test
 - Refactor scope:
